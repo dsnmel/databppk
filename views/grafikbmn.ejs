@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Grafik Kearsipan</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Import Chart.js -->
+    <style>
+        .sidebar {
+            height: 100vh;
+            background-color: hsl(210, 71.90%, 37.60%);
+            padding: 20px;
+            box-shadow: 0 4px 7px hsl(210, 71.90%, 37.60%);
+        }
+
+        .search-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 10px 20px;
+            box-shadow: 0 4px 6px hsl(58, 82.00%, 52.00%);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #6c757d;
+        }
+
+        .search-box input {
+            border: none;
+            outline: none;
+            background: none;
+            color: #6c757d;
+        }
+
+        .search-box input::placeholder {
+            color: #adb5bd;
+        }
+
+        .icon-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .icon-group img {
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            box-shadow: hsl(210, 71.90%, 37.60%);
+        }
+
+        .icon-group .notification {
+            position: relative;
+        }
+
+        .icon-group .notification::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 10px;
+            height: 10px;
+            background-color: red;
+            border-radius: 50%;
+        }
+        .canvas {
+    max-width: 600px;
+    max-height: 300px;
+    /* Untuk memposisikan grafik di tengah */
+    display: block;
+}
+
+        .card {
+            box-shadow: 0 4px 6px hsl(210, 71.90%, 37.60%);
+            border: none;
+        }
+
+        .content {
+            margin-top: 20px;
+        }
+
+        .mt-10 {
+            margin-top: 15px;
+        }
+        
+    </style>
+</head>
+
+<body>
+    <div class="d-flex">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <h5 class="text-primary mb-4" style="color: #FFD700;">
+                <img src="/images/logo.png" alt="Logo" style="width: 150px; height: auto; margin-right: 10px;">
+            </h5>
+            <li class="nav-item" style="list-style: none; margin-top: 10px; margin-left: 3px;">
+                <a class="nav-link" href="/" style="color: white;">
+                    <i class="bi bi-house-fill" style="color: #FFD700; margin-right: 5px;"></i> Dashboard
+                </a>
+            </li>
+            <li class="nav-item" style="list-style: none; margin-top: 10px; margin-left: 3px;">
+                <a class="nav-link" href="/bmn" style="color: white;">
+                    <i class="bi bi-graph-up" style="color: #FFD700; margin-right: 5px;"></i> Kearsipan
+                </a>
+            </li>
+            <li class="nav-item" style="list-style: none; margin-top: 10px; margin-left: 3px;">
+                <a class="nav-link" href="/grafikbmn" style="color: white;">
+                    <i class="bi bi-graph-up" style="color: #FFD700; margin-right: 5px;"></i> Grafik
+                </a>
+            </li>
+            <li class="nav-item" style="list-style: none; margin-top: 10px; margin-left: 3px;">
+                <a class="nav-link" href="/databmn" style="color: white;">
+                    <i class="bi bi-graph-up" style="color: #FFD700; margin-right: 5px;"></i> Data
+                </a>
+            </li>
+        </div>
+
+        <!-- Konten Utama -->
+        <div class="flex-grow-1">
+            <!-- Search Bar -->
+            <div class="search-container mt-3 mx-4">
+                <div class="search-box">
+                    <i class="bi bi-search"></i>
+                    <input type="text" placeholder="Search (Ctrl+/)" />
+                </div>
+                <div class="icon-group">
+                    <i class="bi bi-globe"></i>
+                    <i class="bi bi-brightness-high"></i>
+                    <i class="bi bi-grid"></i>
+                    <div class="notification">
+                        <i class="bi bi-bell"></i>
+                    </div>
+                    <img src="img/account.jpg" alt="Profile Picture">
+                </div>
+            </div>
+
+            <!-- Grafik Data -->
+            <div class="container-fluid p-4 content">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Grafik Data Kearsipan</h5>
+                        <div style="width: 600px; height: 300px;">
+                            <canvas id="myChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <script>
+    // Data dari server
+    const datapenjualan = <%- JSON.stringify(datapenjualan || []) %>;
+
+    // Ambil label unik dari kedua dataset
+    const labels = [...new Set([...datapenjualan.map(item => item.jen_data), ])];
+
+    // Buat dataset untuk masing-masing sumber data
+    const countspenjualan = labels.map(label => {
+        const item = datapenjualan.find(d => d.jen_data === label);
+        return item ? item.count : 0;
+    });
+
+    // Render Chart.js
+    const ctx = document.getElementById('myChart').getContext('2d');
+    const myChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Pemindahtanganan dengan Penjualan',
+                    data: countspenjualan,
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                },
+                
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+
+            </script>                  
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
